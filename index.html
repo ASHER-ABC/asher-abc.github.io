@@ -465,13 +465,15 @@ const SPSND={dr:[3.46,4.1],sh:[21.0,21.95],wh:[42.94,43.7],tr:[62.4,63.15]};
 let spBuf=null, spSrc=null;
 async function spEnsure(){ await ensure(); if(!spBuf){ const bin2=Uint8Array.from(atob(TA),c=>c.charCodeAt(0)); spBuf=await new Promise((ok,no)=>ctx.decodeAudioData(bin2.buffer,ok,no)) } }
 const WSEG={drum:[9.1,11.15],dress:[15.5,17.85],sheep:[27.18,30.3],shelf:[36.73,39.55],where:[49.47,51.75],when:[56.9,59.15],tree:[67.28,69.45],trip:[74.71,77.5]};
+const SPFULL={dr:[2.02,4.1],sh:[19.34,21.95],wh:[41.27,43.7],tr:[61.0,63.15]};
 function playSp(k){ return playSeg(SPSND[k]) }
+function playSpFull(k){ return playSeg(SPFULL[k]) }
 async function playSeg(r){ try{ stop(); stopClip() }catch(e){} if(spSrc){ try{spSrc.onended=null;spSrc.stop()}catch(e){} spSrc=null }
   await spEnsure();
   return new Promise(res=>{ const s=ctx.createBufferSource(); s.buffer=spBuf; s.connect(ctx.destination); s.onended=()=>{ if(spSrc===s) spSrc=null; res() }; spSrc=s; s.start(0,r[0],r[1]-r[0]) }) }
 window.playSp=playSp; window.SPK=['dr','sh','wh','tr'];
 document.getElementById('spfour').onclick=async()=>{ tStop(); hush(); const id=srun; const cards=[...document.querySelectorAll('.spcard')];
-  for(let i=0;i<4;i++){ if(id!==srun) return; cards[i].classList.add('on'); cards[i].scrollIntoView({block:'nearest',behavior:'smooth'}); await playSp(SP[i].k); await new Promise(z=>setTimeout(z,500)); if(id!==srun) return; await playSp(SP[i].k); cards[i].classList.remove('on'); await new Promise(z=>setTimeout(z,900)) } };
+  for(let i=0;i<4;i++){ if(id!==srun) return; cards[i].classList.add('on'); cards[i].scrollIntoView({block:'nearest',behavior:'smooth'}); await playSpFull(SP[i].k); if(id!==srun) return; cards[i].classList.remove('on'); await new Promise(z=>setTimeout(z,900)) } };
 const mark=(w,k)=>`<u>${w.slice(0,k.length)}</u>${w.slice(k.length)}`;
 const g=document.getElementById('spgrid');
 SP.forEach(S=>{
@@ -482,7 +484,7 @@ SP.forEach(S=>{
     <div class="row"><button class="both">▶ 兩個單字</button></div>`;
   const bs=[...c.querySelectorAll('.spw')];
   bs.forEach((b,i)=>b.onclick=async()=>{ tStop(); hush(); const id=srun; document.querySelectorAll('.spw.on').forEach(x=>x.classList.remove('on')); b.classList.add('on'); await playSeg(WSEG[S.w[i][0]]); if(id===srun) b.classList.remove('on') });
-  c.querySelector('.spsnd').onclick=async()=>{ tStop(); hush(); const id=srun; c.classList.add('on'); await playSp(S.k); await new Promise(z=>setTimeout(z,600)); if(id===srun) await playSp(S.k); c.classList.remove('on') };
+  c.querySelector('.spsnd').onclick=async()=>{ tStop(); hush(); const id=srun; c.classList.add('on'); await playSpFull(S.k); if(id===srun) c.classList.remove('on') };
   c.querySelector('.both').onclick=async()=>{ tStop(); hush(); const id=srun; for(let i=0;i<2;i++){ if(id!==srun) return; bs[i].classList.add('on'); await playSeg(WSEG[S.w[i][0]]); bs[i].classList.remove('on'); await new Promise(z=>setTimeout(z,600)) } };
   g.appendChild(c);
 });
