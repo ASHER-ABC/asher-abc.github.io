@@ -332,9 +332,11 @@ const PAIRS=[
  {a:{lab:"E",big:"Ee",say:"/ɛ/",hint:"像 ㄝ",t:[8.75,10.2]},
   b:{lab:"I",big:"Ii",say:"/ɪ/",hint:"嘴巴扁扁 一",t:[15.05,16.4]}}];
 let ctx=null, buf=null, cur=null, postTimer=0;
+let bufP=null;
 async function ensure(){
-  if(!ctx){ ctx=new (window.AudioContext||window.webkitAudioContext)(); buf=await new Promise((ok,no)=>ctx.decodeAudioData(bin.buffer.slice(0),ok,no)) }
-  if(ctx.state==='suspended') await ctx.resume();
+  if(!ctx) ctx=new (window.AudioContext||window.webkitAudioContext)();
+  if(ctx.state==='suspended') ctx.resume();
+  if(!buf){ if(!bufP) bufP=new Promise((ok,no)=>ctx.decodeAudioData(bin.buffer.slice(0),ok,no)); buf=await bufP }
 }
 function stopClip(){ if(cur){ try{cur.onended=null;cur.stop()}catch(e){} cur=null } clearTimeout(postTimer);
   document.querySelectorAll('.side.on,.card.on,.post.on').forEach(x=>x.classList.remove('on')) }
@@ -463,7 +465,8 @@ document.getElementById('spintro').onclick=()=>{ hush(); tStop(); tb.currentTime
 document.getElementById('spstop').onclick=()=>{ tStop(); hush() };
 const SPSND={dr:[3.46,4.1],sh:[21.0,21.95],wh:[42.94,43.7],tr:[62.4,63.15]};
 let spBuf=null, spSrc=null;
-async function spEnsure(){ await ensure(); if(!spBuf){ const bin2=Uint8Array.from(atob(TA),c=>c.charCodeAt(0)); spBuf=await new Promise((ok,no)=>ctx.decodeAudioData(bin2.buffer,ok,no)) } }
+let spP=null;
+async function spEnsure(){ await ensure(); if(!spBuf){ if(!spP){ const bin2=Uint8Array.from(atob(TA),c=>c.charCodeAt(0)); spP=new Promise((ok,no)=>ctx.decodeAudioData(bin2.buffer,ok,no)) } spBuf=await spP } }
 const WSEG={drum:[9.1,11.15],dress:[15.5,17.85],sheep:[27.18,30.3],shelf:[36.73,39.55],where:[49.47,51.75],when:[56.9,59.15],tree:[67.28,69.45],trip:[74.71,77.5]};
 const SPFULL={dr:[2.02,4.1],sh:[19.34,21.95],wh:[41.27,43.7],tr:[61.0,63.15]};
 function playSp(k){ return playSeg(SPSND[k]) }
