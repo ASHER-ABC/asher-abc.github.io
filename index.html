@@ -118,6 +118,8 @@ button:focus-visible{outline:3px dashed var(--orange);outline-offset:3px}
 .spw .en u{text-decoration:none;color:var(--orange);-webkit-text-stroke:0}
 .spw .cn{font-size:13px;color:var(--muted)}
 .spw.on{outline:4px solid var(--red);outline-offset:2px}
+.spsnd{width:100%;justify-content:flex-start;text-align:left;background:var(--paper);border-radius:20px;padding:8px 12px}
+.spsub{margin:0;font-size:15px;font-weight:700}
 .spcard.on{outline:4px solid var(--red);outline-offset:3px}
 #spbar .primary{font-size:16px}
 @media (prefers-reduced-motion:no-preference){.spw.on{animation:wiggle .5s ease-in-out infinite}}
@@ -207,11 +209,11 @@ h1 small{font-size:.55em}
   <section class="sp pane" id="special" hidden>
     <h2 style="font-family:var(--display);font-weight:800;font-size:26px;margin:0;color:#fff;-webkit-text-stroke:1.5px var(--ink);paint-order:stroke fill;text-shadow:2px 2px 0 var(--ink)">特殊發音</h2>
     <p class="how">兩個字母合起來，變成新的音。</p>
-    <div class="row" id="spbar"><button class="primary" id="spall" style="background:var(--yellow)">▶ 老師唸全部</button><button id="spintro">🎧 老師說明</button><button id="spstop">■ 停止</button></div>
+    <div class="row" id="spbar"><button class="primary" id="spfour" style="background:var(--yellow)">▶ 四個音</button><button id="spall">🎧 老師完整錄音</button><button id="spintro" hidden>說明</button><button id="spstop">■ 停止</button></div>
     <div class="prog" aria-hidden="true"><i id="spprog"></i></div>
     <div class="spgrid" id="spgrid"></div>
     <div class="spq">
-      <p class="qask" style="margin:0">🎧 聽一聽，是哪一個？</p>
+      <p class="qask" style="margin:0">🎧 聽老師的音，是哪一個？</p>
       <button class="qplay" id="spplay" style="width:84px;height:84px;font-size:34px">🔊</button>
       <div class="qopts" id="spopts"></div>
       <div class="qmsg" id="spmsg" aria-live="polite"></div>
@@ -227,9 +229,9 @@ h1 small{font-size:.55em}
 
   <section class="drill pane" id="test" hidden>
     <h2>小測驗</h2>
-    <p class="how">聽老師的音，選出字母。</p>
+    <p class="how">聽老師的音，選出答案。有字母，也有特殊發音。</p>
     <div class="quizbox" id="quizbox">
-      <div id="qintro" class="qend"><div class="qbig">準備好了嗎？</div><p class="qask" style="margin:0">考幾題？</p><div class="qnum" id="qnum"><button data-n="10" aria-pressed="false">10 題</button><button data-n="20" aria-pressed="true">20 題</button><button data-n="26" aria-pressed="false">全部 26 題</button></div><button id="qstart">開始 ▶</button></div>
+      <div id="qintro" class="qend"><div class="qbig">準備好了嗎？</div><p class="qask" style="margin:0">考幾題？</p><div class="qnum" id="qnum"><button data-n="10" aria-pressed="false">10 題</button><button data-n="20" aria-pressed="true">20 題</button><button data-n="26" aria-pressed="false">全部 30 題</button></div><button id="qstart">開始 ▶</button></div>
       <div id="qrun" class="qend" hidden>
         <div class="qtop"><span class="qcount" id="qcount">第 1 / 10 題</span><span class="qstars" id="qstars"></span></div>
         <button class="qplay" id="qplay" aria-label="再聽一次">🔊</button>
@@ -361,8 +363,8 @@ PAIRS.forEach((P,i)=>{
   d.querySelector('.guess').onclick=()=>{ pick=Math.random()<.5?'a':'b'; ans.hidden=false; q.textContent='是哪一個？'; clip(P[pick].t,null) };
   d.querySelector('.again').onclick=()=>{ if(pick) clip(P[pick].t,null) };
   const check=(c)=>{ if(!pick) return; const right=c===pick;
-    q.innerHTML=right?`<b class="ok">答對了！</b>`:`<b class="no">再聽一次！</b>`;
-    clip(P[pick].t,pick==='a'?sa:sb); if(right) pick=null };
+    if(right){ q.innerHTML='<b class="ok">答對了！</b> 下一題…'; pick=null; setTimeout(()=>d.querySelector('.guess').click(),700) }
+    else { q.innerHTML='<b class="no">再聽一次！</b>'; clip(P[pick].t,null) } };
   d.querySelector('.pa').onclick=()=>check('a'); d.querySelector('.pb').onclick=()=>check('b');
   pw.appendChild(d);
 });
@@ -379,12 +381,15 @@ function makeQuiz(){
   let pickL;
   if(QN>=26) pickL=LET.slice();
   else { const nv=Math.min(5,Math.round(QN*0.3)); pickL=[...shuffle(['A','E','I','O','U']).slice(0,nv),...shuffle(LET.filter(l=>!'AEIOU'.includes(l))).slice(0,QN-nv)] }
-  return shuffle(pickL).map(L=>{
+  const nsp=QN>=26?4:Math.round(QN*0.2);
+  if(QN<26) pickL=pickL.slice(0,QN-nsp);
+  const spQ=shuffle(['dr','sh','wh','tr']).slice(0,nsp).map(k=>({L:k,sp:true,opts:shuffle([k,...shuffle(['dr','sh','wh','tr'].filter(x=>x!==k)).slice(0,2)])}));
+  return shuffle([...spQ,...shuffle(pickL).map(L=>{
     const opts=[L]; const conf=shuffle(CONF[L].split('').filter(c=>!same(c,L)));
     if(conf.length) opts.push(conf[0]);
     while(opts.length<3){const c=LET[Math.floor(Math.random()*26)]; if(!opts.some(o=>same(o,c))) opts.push(c)}
     return {L,opts:shuffle(opts)};
-  });
+  })]);
 }
 function show(id){['qintro','qrun','qdone'].forEach(x=>$(x).hidden=x!==id)}
 function stars(){ $('qstars').textContent='⭐'.repeat(score) }
@@ -392,16 +397,16 @@ function ask(){
   const q=Q[qi]; locked=false; firstTry=true;
   $('qcount').textContent=`第 ${qi+1} / ${Q.length} 題`; $('qmsg').textContent=''; stars();
   const box=$('qopts'); box.innerHTML='';
-  q.opts.forEach(o=>{const b=document.createElement('button'); b.textContent=o+o.toLowerCase(); b.onclick=()=>answer(o,b); box.appendChild(b)});
-  setTimeout(playQ,350);
+  q.opts.forEach(o=>{const b=document.createElement('button'); b.textContent=q.sp?o:o+o.toLowerCase(); b.onclick=()=>answer(o,b); box.appendChild(b)});
+  playQ();
 }
-function playQ(){ const p=$('qplay'); p.classList.remove('ping'); void p.offsetWidth; p.classList.add('ping'); clip(snd(Q[qi].L),null) }
+function playQ(){ const p=$('qplay'); p.classList.remove('ping'); void p.offsetWidth; p.classList.add('ping'); if(Q[qi].sp) window.playSp(Q[qi].L); else clip(snd(Q[qi].L),null) }
 function answer(o,b){
   if(locked) return; const q=Q[qi];
-  if(same(o,q.L)){
+  if(q.sp?o===q.L:same(o,q.L)){
     locked=true; b.classList.add('right'); if(firstTry){score++; stars()}
-    $('qmsg').innerHTML=`<span class="ok">答對了！</span> 是 ${q.L}`+(firstTry?' ⭐':'');
-    setTimeout(()=>{ qi++; qi<Q.length?ask():finish() },1300);
+    $('qmsg').innerHTML=`<span class="ok">答對了！</span>`+(firstTry?' ⭐':'');
+    setTimeout(()=>{ qi++; qi<Q.length?ask():finish() },650);
   } else {
     b.classList.add('wrong'); b.disabled=true;
     if(firstTry) missed.push(q.L); firstTry=false;
@@ -413,9 +418,9 @@ function finish(){
   const msg=score===n?'全部答對！🎉':score>=n*0.8?'好棒！':score>=n*0.5?'不錯喔！':'再加油！';
   const miss=[...new Set(missed)];
   $('qdone').innerHTML=`<div class="qbig">${score} / ${n}</div><div class="qstars">${'⭐'.repeat(score)}</div><p class="qask">${msg}</p>`+
-    (miss.length?`<p style="margin:0">再聽一次：</p><div class="qmiss">${miss.map(L=>`<button data-l="${L}">🔊 ${L}${L.toLowerCase()}</button>`).join('')}</div>`:'')+
+    (miss.length?`<p style="margin:0">再聽一次：</p><div class="qmiss">${miss.map(L=>`<button data-l="${L}">🔊 ${L.length>1?L:L+L.toLowerCase()}</button>`).join('')}</div>`:'')+
     `<button id="qagain">再玩一次 ↻</button>`;
-  $('qdone').querySelectorAll('.qmiss button').forEach(b=>b.onclick=()=>{const L=b.dataset.l,i=LET.indexOf(L); clip([startOf(i),Math.min(endOf(i),END)],null)});
+  $('qdone').querySelectorAll('.qmiss button').forEach(b=>b.onclick=()=>{const L=b.dataset.l; if(L.length>1){ window.playSp(L); return } const i=LET.indexOf(L); clip([startOf(i),Math.min(endOf(i),END)],null)});
   $('qagain').onclick=start;
 }
 function start(){ Q=makeQuiz(); qi=0; score=0; missed=[]; show('qrun'); ask() }
@@ -452,33 +457,43 @@ function tPlay(from,to){ hush(); if(typeof stop==='function'){try{stop();stopCli
 document.getElementById('spall').onclick=()=>tPlay(0,78.3);
 document.getElementById('spintro').onclick=()=>{ hush(); tStop(); tb.currentTime=0; tb.play().catch(()=>{}) };
 document.getElementById('spstop').onclick=()=>{ tStop(); hush() };
+const SPSND={dr:[3.46,4.1],sh:[21.0,21.95],wh:[42.94,43.7],tr:[62.4,63.15]};
+let spBuf=null, spSrc=null;
+async function spEnsure(){ await ensure(); if(!spBuf){ const bin2=Uint8Array.from(atob(TA),c=>c.charCodeAt(0)); spBuf=await new Promise((ok,no)=>ctx.decodeAudioData(bin2.buffer,ok,no)) } }
+async function playSp(k){ try{ stop(); stopClip() }catch(e){} if(spSrc){ try{spSrc.onended=null;spSrc.stop()}catch(e){} spSrc=null }
+  await spEnsure(); const r=SPSND[k];
+  return new Promise(res=>{ const s=ctx.createBufferSource(); s.buffer=spBuf; s.connect(ctx.destination); s.onended=()=>{ if(spSrc===s) spSrc=null; res() }; spSrc=s; s.start(0,r[0],r[1]-r[0]) }) }
+window.playSp=playSp; window.SPK=['dr','sh','wh','tr'];
+document.getElementById('spfour').onclick=async()=>{ tStop(); hush(); const id=srun; const cards=[...document.querySelectorAll('.spcard')];
+  for(let i=0;i<4;i++){ if(id!==srun) return; cards[i].classList.add('on'); cards[i].scrollIntoView({block:'nearest',behavior:'smooth'}); await playSp(SP[i].k); await new Promise(z=>setTimeout(z,500)); if(id!==srun) return; await playSp(SP[i].k); cards[i].classList.remove('on'); await new Promise(z=>setTimeout(z,900)) } };
 const mark=(w,k)=>`<u>${w.slice(0,k.length)}</u>${w.slice(k.length)}`;
 const g=document.getElementById('spgrid');
 SP.forEach(S=>{
   const c=document.createElement('div'); c.className='spcard';
-  c.innerHTML=`<div class="sphead"><span class="spbig">${S.k}</span><span class="sphint"><b>${S.snd}</b><br>${S.hint}</span></div>
+  c.innerHTML=`<button class="sphead spsnd"><span class="spbig">${S.k}</span><span class="sphint"><b>🔊 ${S.snd}</b><br>${S.hint}</span></button>
+    <p class="spsub">單字</p>
     <div class="spwords">${S.w.map(w=>`<button class="spw"><span class="em">${w[2]}</span><span class="en">${mark(w[0],S.k)}</span><span class="cn">${w[1]}</span></button>`).join('')}</div>
-    <div class="row"><button class="teach">🎧 老師唸</button><button class="both">▶ 再聽單字</button></div>`;
+    <div class="row"><button class="both">▶ 單字聽兩次</button></div>`;
   const bs=[...c.querySelectorAll('.spw')];
   bs.forEach((b,i)=>b.onclick=async()=>{ if(typeof stop==='function'){try{stop();stopClip()}catch(e){}} tStop(); hush(); const id=srun; b.classList.add('on'); await say(S.w[i][0],id); b.classList.remove('on') });
-  c.querySelector('.teach').onclick=()=>{ const i=SP.indexOf(S); tPlay(ROWS[i][0],ROWS[i][1]) };
+  c.querySelector('.spsnd').onclick=async()=>{ tStop(); hush(); const id=srun; c.classList.add('on'); await playSp(S.k); await new Promise(z=>setTimeout(z,600)); if(id===srun) await playSp(S.k); c.classList.remove('on') };
   c.querySelector('.both').onclick=async()=>{ tStop(); hush(); const id=srun; for(let r=0;r<2;r++) for(let i=0;i<2;i++){ if(id!==srun) return; bs[i].classList.add('on'); await say(S.w[i][0],id); bs[i].classList.remove('on'); await new Promise(z=>setTimeout(z,700)) } };
   g.appendChild(c);
 });
 // 小測驗
-const pool=SP.flatMap(S=>S.w.map(w=>({k:S.k,w})));
+const pool=SP.map(S=>({k:S.k}));
 let cur=null, score=0, tries=0, first=true;
 const opts=document.getElementById('spopts'), msg=document.getElementById('spmsg');
 SP.forEach(S=>{ const b=document.createElement('button'); b.textContent=S.k; b.onclick=()=>{
   if(!cur){ msg.textContent='先按 🔊'; return }
   if(S.k===cur.k){ b.classList.add('right'); if(first) score++; tries++; document.getElementById('spstars').textContent='⭐'.repeat(score)+`（${score} / ${tries}）`;
-    msg.innerHTML=`<span class="ok">答對了！</span> ${cur.w[2]} ${cur.w[0]}`; cur=null;
-  } else { b.classList.add('wrong'); if(first){ tries++; document.getElementById('spstars').textContent='⭐'.repeat(score)+`（${score} / ${tries}）` } first=false; msg.innerHTML='<span class="no">再聽一次！</span>'; hush(); say(cur.w[0],srun) } };
+    msg.innerHTML=`<span class="ok">答對了！</span> 下一題…`; cur=null; setTimeout(()=>document.getElementById('spplay').click(),700);
+  } else { b.classList.add('wrong'); if(first){ tries++; document.getElementById('spstars').textContent='⭐'.repeat(score)+`（${score} / ${tries}）` } first=false; msg.innerHTML='<span class="no">再聽一次！</span>'; hush(); playSp(cur.k) } };
   opts.appendChild(b) });
 document.getElementById('spplay').onclick=()=>{ tStop(); hush();
   if(!cur){ let n; do{ n=pool[Math.floor(Math.random()*pool.length)] }while(pool.length>1 && cur===n); cur=n; first=true; msg.textContent='';
     opts.querySelectorAll('button').forEach(b=>b.classList.remove('right','wrong')) }
-  say(cur.w[0],srun) };
+  playSp(cur.k) };
 })();
 </script>
 <script>
