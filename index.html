@@ -409,7 +409,7 @@ h1 small{font-size:.55em}
     <div class="row"><button class="primary" id="prteach" style="background:var(--yellow)">▶ 老師錄音</button><button class="primary" id="prall" style="background:var(--mint)">▶ 全部聽一遍</button><button id="prhide" aria-pressed="false">🙈 遮住答案</button><button id="prstop">■ 停止</button></div>
     <div class="prgrid" id="prgrid"></div>
     <div class="tcard prrule"><div class="tt">📌 老師的小規則</div><div class="tb">
-      ① <b>I</b> 一定配 <b>am</b>。<br>② <b>you</b> 配 <b>are</b>。<br>③ 他、她、它、一個人的名字、this、that，都配 <b>is</b>。<br>
+      ① <b>I</b> 一定配 <b>am</b>。<br>② <b>you</b> 配 <b>are</b>。<br>③ 他、她、它、this、that，都配 <b>is</b>。<br>
       ④ 縮寫：把 be 動詞的第一個字母換成一撇 <b>’</b>，兩格變一格。<br>⑤ <b>this is</b> 不能縮寫！<br>⑥ <b>I</b> 永遠大寫；其他字不在句子開頭就用小寫。</div></div>
 
     <div class="gmodes" style="justify-content:center"><button id="prm1" aria-pressed="true">🧩 選 be 動詞</button><button id="prm2" aria-pressed="false">✂️ 縮寫變變變</button></div>
@@ -887,7 +887,7 @@ document.getElementById('spplay').onclick=()=>{ tStop(); hush();
 <script>
 // ---- 版本檢查：舊版就跳通知 ----
 (function(){
-  const APP_VER="2026-11-21-1";
+  const APP_VER="2026-11-21-2";
   let newer=null;
   async function check(){
     try{
@@ -1073,14 +1073,13 @@ const R=[
  {zh:'他',tag:'第三人稱・單數',em:'👦',sub:'he',be:'is',ct:"he's"},
  {zh:'她',tag:'第三人稱・單數',em:'👧',sub:'she',be:'is',ct:"she's"},
  {zh:'它／牠',tag:'第三人稱・單數',em:'🐶',sub:'it',be:'is',ct:"it's"},
- {zh:'一個人的名字',tag:'第三人稱・單數',em:'🧒',sub:'Angela',be:'is',ct:"Angela's",note:'Charlie、Aki 也一樣'},
  {zh:'這個',tag:'近・單數',em:'👇',sub:'this',be:'is',ct:null,note:'this is 不能縮寫！'},
  {zh:'那個',tag:'遠・單數',em:'👉',sub:'that',be:'is',ct:"that's"}];
 const $=id=>document.getElementById(id);
 const sh=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 const wait=ms=>new Promise(r=>setTimeout(r,ms));
 let run=0;
-const say=t=>window.ttsSay?window.ttsSay(t):Promise.resolve();
+const say=t=>window.ttsSay?window.ttsSay(t==='I'?'eye':t):Promise.resolve();
 const ta=(()=>{ const a=new Audio(URL.createObjectURL(new Blob([Uint8Array.from(atob(PR_B64),c=>c.charCodeAt(0))],{type:'audio/mpeg'}))); a.preload='auto'; return a })();
 function halt(){ run++; try{ ta.pause() }catch(e){} try{ speechSynthesis.cancel() }catch(e){} document.querySelectorAll('#pron .on').forEach(x=>x.classList.remove('on')) }
 function quiet(){ try{ stop(); stopClip() }catch(e){} try{ tStop(); hush() }catch(e){} try{ window.lvStop&&window.lvStop() }catch(e){} halt() }
@@ -1111,8 +1110,8 @@ document.querySelectorAll('.lvrw').forEach(b=>b.onclick=()=>{ quiet(); say(b.dat
 
 // ---- 練習 ----
 let mode=1, Q=[], qi=0, score=0, cur=null, wrong=0, lock=false;
-const POOL=()=>R.concat([{zh:'一個人的名字',em:'👦',sub:'Charlie',be:'is',ct:"Charlie's"},{zh:'一個人的名字',em:'👧',sub:'Aki',be:'is',ct:"Aki's"}]);
-const BEHINT={am:'<b>I</b> 一定配 <b>am</b>',are:'<b>you</b> 配 <b>are</b>',is:'他、她、它、一個人的名字、this、that 都配 <b>is</b>'};
+const POOL=()=>R.slice();
+const BEHINT={am:'<b>I</b> 一定配 <b>am</b>',are:'<b>you</b> 配 <b>are</b>',is:'他、她、它、this、that 都配 <b>is</b>'};
 function setMode(m){ mode=m; $('prm1').setAttribute('aria-pressed',m===1); $('prm2').setAttribute('aria-pressed',m===2); reset() }
 $('prm1').onclick=()=>setMode(1); $('prm2').onclick=()=>setMode(2);
 function reset(){ Q=[]; qi=0; score=0; cur=null; $('propts').innerHTML=''; $('prmsg').textContent=''; $('prstars').textContent=''; $('prcount').textContent='準備好了嗎？';
