@@ -887,7 +887,7 @@ document.getElementById('spplay').onclick=()=>{ tStop(); hush();
 <script>
 // ---- 版本檢查：舊版就跳通知 ----
 (function(){
-  const APP_VER="2026-11-21-2";
+  const APP_VER="2026-11-21-4";
   let newer=null;
   async function check(){
     try{
@@ -992,8 +992,21 @@ function pickAns(b){
   function pick(){ const all=synth.getVoices(), en=all.filter(v=>/^en[-_]/i.test(v.lang)), us=en.filter(v=>/^en[-_]US/i.test(v.lang));
     voice=us.find(v=>FEM.test(v.name))||en.find(v=>FEM.test(v.name))||us[0]||en[0]||null }
   pick(); try{ synth.addEventListener('voiceschanged',pick) }catch(e){}
-  function say(t){ return new Promise(res=>{ try{ synth.cancel() }catch(e){} const u=new SpeechSynthesisUtterance(t); u.lang='en-US'; if(voice) u.voice=voice; u.rate=0.8; u.pitch=1.15; u.onend=u.onerror=()=>res(); try{ synth.speak(u) }catch(e){ res() } }) }
+  // iPhone：剛停掉上一句馬上念下一句，有時會沒聲音 → 稍等一下再念，沒開始就自動重念一次
+  let live=false, tok=0;
+  function say(t){ return new Promise(res=>{ const my=++tok; const busy=live||synth.speaking||synth.pending; try{ synth.cancel() }catch(e){}
+    let done=false; const fin=()=>{ if(!done){ done=true; if(my===tok) live=false; res() } };
+    const go=n=>{ if(my!==tok){ fin(); return } let started=false; const u=new SpeechSynthesisUtterance(t); u.lang='en-US'; if(voice) u.voice=voice; u.rate=0.8; u.pitch=1.15;
+      u.onend=u.onerror=()=>{ if(u._dead) return; u._dead=true; if(!started&&n<1&&my===tok) setTimeout(()=>go(n+1),150); else fin() };
+      window.__utt=u; if(!voice) pick();
+      u.onstart=()=>{ started=true; setTimeout(()=>{ if(!u._dead){ u._dead=true; fin() } }, Math.max(4000,t.length*450)) };
+      live=true; try{ synth.resume() }catch(e){} try{ synth.speak(u) }catch(e){ fin(); return }
+      setTimeout(()=>{ if(!started&&!u._dead&&my===tok&&n<1){ u._dead=true; try{ synth.cancel() }catch(e){} setTimeout(()=>go(n+1),150) } },1500) };
+    if(busy) setTimeout(()=>go(0),120); else go(0) }) }
   window.ttsSay=t=>{ try{ stop(); stopClip() }catch(e){} return say(t) };
+  const unstick=()=>{ try{ if(synth.paused) synth.resume() }catch(e){} };
+  document.addEventListener('visibilitychange',()=>{ if(!document.hidden){ unstick() } });
+  document.addEventListener('touchend',unstick,{passive:true});
   const bs=[...document.querySelectorAll('.hwb')];
   bs.forEach(b=>b.onclick=async()=>{ const id=++run; try{ stop(); stopClip() }catch(e){} bs.forEach(x=>x.classList.remove('on')); b.classList.add('on'); await say(b.dataset.w); if(id===run) b.classList.remove('on') });
   document.getElementById('hwboth').onclick=async()=>{ const id=++run; try{ stop(); stopClip() }catch(e){}
